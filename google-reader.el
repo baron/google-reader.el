@@ -84,26 +84,33 @@
   (if (get-buffer google-reader-auth-token-buffer-name)
       (kill-buffer google-reader-auth-token-buffer-name)))
 
+(defun google-reader-refresh-token-buffer ()
+  (progn (google-reader-kill-token-buffer)
+         (get-buffer-create google-reader-auth-token-buffer-name)))
+
 (defun google-reader-authenticate ()
-  (google-reader-kill-token-buffer)
+  (google-reader-refresh-token-buffer)
   (let* ((gr-header (format google-reader-authentication-header-format google-reader-account google-reader-password)))
-    ;;; this calls an asynchronous process ("curl, etc.") that writes output to temp buffer
-    (start-process "google-reader-account-auth"
-                   google-reader-auth-token-buffer-name
-                   google-reader-url-retrieval-program
-                   "--silent"
-                   "-d"
-                   gr-header
-                   google-reader-client-login-url)))
+    ;; this calls a synchronous process ("curl, etc.") that writes output to temp buffer
+    (call-process google-reader-url-retrieval-program
+                  nil
+                  google-reader-auth-token-buffer-name
+                  nil
+                  "--silent"
+                  "-d"
+                  gr-header
+                  google-reader-client-login-url)))
 
 (defun google-reader-set-auth-token ()
-  (google-reader-authenticate)
   (set-buffer (get-buffer google-reader-auth-token-buffer-name))
   (goto-char (point-min))
   (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
   (setq google-reader-auth-token-string (match-string 1))
-  (message google-reader-auth-token-string)
-  (google-reader-kill-token-buffer))
+  (message google-reader-auth-token-string))
+
+
+(defun google-reader-reset-auth-token ()
+  (setq google-reader-auth-token-string nil))
 
 (defun google-reader-get-url (url)
   (let* ((gr-header (format google-reader-auth-token-header-format google-reader-auth-token-string)))
@@ -115,10 +122,18 @@
                    gr-header
                    url)))
 
+(defun google-reader-setup-auth ()
+  (progn
+    (google-reader-authenticate)
+    (google-reader-set-auth-token)
+    (google-reader-kill-token-buffer)))
 
 ;; the declarations below are for testing purposes
+;; (google-reader-authenticate)
 ;; (google-reader-set-auth-token)
-
+;; (google-reader-reset-auth-token)
+;; (message google-reader-auth-token-string)
+;; (google-reader-setup-auth)
 
 (provide 'google-reader)
 
