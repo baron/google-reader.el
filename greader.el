@@ -70,8 +70,12 @@
 (defvar greader-auth-token-buffer-name "*greader auth token*"
   "this buffer is used for grabbing auth token")
 
+(defvar greader-auth-token-string nil
+  "this string will be used for all authentication requests")
+
 (defun greader-kill-token-buffer ()
-  (kill-buffer greader-auth-token-buffer-name))
+  (if (get-buffer greader-auth-token-buffer-name)
+      (kill-buffer greader-auth-token-buffer-name)))
 
 (defun greader-authenticate ()
   (greader-kill-token-buffer)
@@ -85,7 +89,28 @@
                    gr-header
                    greader-client-login-url)))
 
+(defun greader-set-auth-token ()
+  (set-buffer (get-buffer greader-auth-token-buffer-name))
+  (goto-char (point-min))
+  (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
+  (setq greader-auth-token-string (match-string 1))
+  (greader-kill-token-buffer))
+
+;; the declarations below are for testing purposes
+;; (greader-authenticate)
+;; (greader-set-auth-token)
+
 (provide 'greader)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; greader.el ends here
+
+
+
+
+
+
+
+
+
+
