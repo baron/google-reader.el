@@ -1,6 +1,6 @@
-;;; greader.el ---
+;;; google-reader.el ---
 ;;
-;; Filename: greader.el
+;; Filename: google-reader.el
 ;; Description: A mode for google reader
 ;; Author: Sam Baron
 ;; Maintainer: Sam Baron
@@ -9,7 +9,7 @@
 ;; Last-Updated:
 ;;           By:
 ;;     Update #: 0
-;; URL: https://github.com/baron/greader
+;; URL: https://github.com/baron/google-reader.el
 ;; Keywords: Google Reader, RSS, News
 ;; Compatibility:
 ;;
@@ -48,67 +48,68 @@
 (require 'cl)
 (require 'json)
 
-(defcustom greader-account nil "your google account name (use full form ie XXXXX@gmail.com)" :group 'greader)
-(defcustom greader-password nil "your google password name" :group 'greader)
+(defcustom google-reader-account nil "your google account name (use full form ie XXXXX@gmail.com)" :group 'google-reader)
+(defcustom google-reader-password nil "your google password name" :group 'google-reader)
 
-(defvar greader-client-login-url "https://www.google.com/accounts/ClientLogin"
+(defvar google-reader-client-login-url "https://www.google.com/accounts/ClientLogin"
   "base url for Google authentication")
 
-(defvar greader-authentication-header-format "accountType=HOSTED_OR_GOOGLE&Email=%s&Passwd=%s&service=reader"
+(defvar google-reader-authentication-header-format "accountType=HOSTED_OR_GOOGLE&Email=%s&Passwd=%s&service=reader"
   "format for auth credential header for Google authentication")
 
-(defvar greader-auth-token-header-format "Authorization: GoogleLogin auth=%s"
+(defvar google-reader-auth-token-header-format "Authorization: GoogleLogin auth=%s"
   "header format for authenticated requests")
 
 ;; once users are able to specify url retrieval program the variables
 ;; below should be converted to defcustom
 
-(defvar greader-use-url-retrieve nil
+(defvar google-reader-use-url-retrieve nil
   "If nil, use external command-line HTTP client instead.")
 
-(defvar greader-url-retrieval-program "curl"
+(defvar google-reader-url-retrieval-program "curl"
   "NOT IMPLEMENTED: URL retrieving program used when `install-elisp-use-url-retrieve' is nil.
   you may want to try or the native program \"wget -q -O- %s\"")
 
-(defvar greader-auth-token-buffer-name "*greader auth token*"
+(defvar google-reader-auth-token-buffer-name "*google-reader auth token*"
   "this buffer is used for grabbing auth token")
 
-(defvar greader-auth-token-string nil
+(defvar google-reader-auth-token-string nil
   "this string will be used for all authentication requests")
 
 ;;  These are various urls needed to access the Google Reader api
-(defvar greader-reading-list-url-format "http://www.google.com/reader/api/0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
+(defvar google-reader-reading-list-url-format "http://www.google.com/reader/api/0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
   "This url fetches unread items where %d is the number of items per fetch and %s is where the continuation string will go if any")
 
-(defun greader-kill-token-buffer ()
-  (if (get-buffer greader-auth-token-buffer-name)
-      (kill-buffer greader-auth-token-buffer-name)))
+(defun google-reader-kill-token-buffer ()
+  (if (get-buffer google-reader-auth-token-buffer-name)
+      (kill-buffer google-reader-auth-token-buffer-name)))
 
-(defun greader-authenticate ()
-  (greader-kill-token-buffer)
-  (let* ((gr-header (format greader-authentication-header-format greader-account greader-password)))
+(defun google-reader-authenticate ()
+  (google-reader-kill-token-buffer)
+  (let* ((gr-header (format google-reader-authentication-header-format google-reader-account google-reader-password)))
     ;;; this calls an asynchronous process ("curl, etc.") that writes output to temp buffer
-    (start-process "greader-account-auth"
-                   greader-auth-token-buffer-name
-                   greader-url-retrieval-program
+    (start-process "google-reader-account-auth"
+                   google-reader-auth-token-buffer-name
+                   google-reader-url-retrieval-program
                    "--silent"
                    "-d"
                    gr-header
-                   greader-client-login-url)))
+                   google-reader-client-login-url)))
 
-(defun greader-set-auth-token ()
-  (greader-authenticate)
-  (set-buffer (get-buffer greader-auth-token-buffer-name))
+(defun google-reader-set-auth-token ()
+  (google-reader-authenticate)
+  (set-buffer (get-buffer google-reader-auth-token-buffer-name))
   (goto-char (point-min))
   (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
-  (setq greader-auth-token-string (match-string 1))
-  (greader-kill-token-buffer))
+  (setq google-reader-auth-token-string (match-string 1))
+  (message google-reader-auth-token-string)
+  (google-reader-kill-token-buffer))
 
-(defun greader-get-url (url)
-  (let* ((gr-header (format greader-auth-token-header-format greader-auth-token-string)))
-    (start-process "greader-get-url"
+(defun google-reader-get-url (url)
+  (let* ((gr-header (format google-reader-auth-token-header-format google-reader-auth-token-string)))
+    (start-process "google-reader-get-url"
                    "temp buffer name"
-                   greader-url-retrieval-program
+                   google-reader-url-retrieval-program
                    "--silent"
                    "-d"
                    gr-header
@@ -116,19 +117,10 @@
 
 
 ;; the declarations below are for testing purposes
-;; (greader-set-auth-token)
+;; (google-reader-set-auth-token)
 
-(provide 'greader)
+
+(provide 'google-reader)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; greader.el ends here
-
-
-
-
-
-
-
-
-
-
+;;; google-reader.el ends here
