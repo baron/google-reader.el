@@ -1,0 +1,19 @@
+# use glob syntax.
+syntax: glob
+*~
+.DS_Store
+\#*
+.\#*
+/.autosaves*
+*.elc
+/.recentf
+elispcache/*
+.emacs.d/eproject.lst
+.emacs.d/url
+*/CVS/*
+CVS
+.emacs.d/history
+.emacs.d/thumbs
+.org-id-locations
+org-clock-save.el
+ac-comphist.dat
