@@ -11,12 +11,12 @@
 ;;     Update #: 0
 ;; URL: https://github.com/baron/google-reader.el
 ;; Keywords: Google Reader, RSS, News
-;; Compatibility:
+;; Compatibility: Only tested on Carbon Emacs 22
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;; Commentary:
-;;
+;;  Not really sure if or when this will be ready for consumption
 ;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +61,7 @@
   "header format for authenticated requests")
 
 ;; once users are able to specify url retrieval program the variables
-;; below should be converted to defcustom
+;; http program functions below should be converted to defcustom
 
 (defvar google-reader-use-url-retrieve nil
   "If nil, use external command-line HTTP client instead.")
@@ -76,9 +76,23 @@
 (defvar google-reader-auth-token-string nil
   "this string will be used for all authentication requests")
 
+;;;;;;;;;;;;;;;;;;;;;
+(defvar google-reader-http-buffer "*Google Reader Http Response Buffer*"
+  "buffer used to hold api request output")
+
 ;;  These are various urls needed to access the Google Reader api
-(defvar google-reader-reading-list-url-format "http://www.google.com/reader/api/0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
+(defvar google-reader-api-base-url "http://www.google.com/reader/api/"
+  "Base url for all Google api requests")
+
+(defvar google-reader-default-fetch-number 200
+  "default number of items to fetch per request")
+
+(defvar google-reader-reading-list-url-format "%s0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
   "This url fetches unread items where %d is the number of items per fetch and %s is where the continuation string will go if any")
+
+;; passing blank string at end since we're not using continuations yet
+(defun google-reader-reading-list-url ()
+  (format google-reader-reading-list-url-format google-reader-api-base-url google-reader-default-fetch-number ""))
 
 (defun google-reader-kill-token-buffer ()
   (if (get-buffer google-reader-auth-token-buffer-name)
@@ -115,12 +129,15 @@
 (defun google-reader-get-url (url)
   (let* ((gr-header (format google-reader-auth-token-header-format google-reader-auth-token-string)))
     (start-process "google-reader-get-url"
-                   "temp buffer name"
+                   google-reader-http-buffer
                    google-reader-url-retrieval-program
                    "--silent"
-                   "-d"
+                   "--header"
                    gr-header
                    url)))
+
+(defun google-reader-get-reading-list ()
+  (google-reader-get-url (google-reader-reading-list-url)))
 
 (defun google-reader-setup-auth ()
   (progn
@@ -134,6 +151,8 @@
 ;; (google-reader-reset-auth-token)
 ;; (message google-reader-auth-token-string)
 ;; (google-reader-setup-auth)
+;; (google-reader-get-reading-list)
+;; (message (google-reader-reading-list-url))
 
 (provide 'google-reader)
 
