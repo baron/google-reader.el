@@ -110,10 +110,11 @@
                   nil
                   google-reader-auth-token-buffer-name
                   nil
+                  google-reader-client-login-url
                   "--silent"
                   "-d"
-                  gr-header
-                  google-reader-client-login-url)))
+                  gr-header)))
+
 
 (defun google-reader-set-auth-token ()
   (set-buffer (get-buffer google-reader-auth-token-buffer-name))
@@ -131,10 +132,10 @@
     (start-process "google-reader-get-url"
                    google-reader-http-buffer
                    google-reader-url-retrieval-program
+                   url
                    "--silent"
                    "--header"
-                   gr-header
-                   url)))
+                   gr-header)))
 
 (defun google-reader-get-reading-list ()
   (google-reader-get-url (google-reader-reading-list-url)))
