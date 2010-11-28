@@ -76,6 +76,14 @@
 (defvar google-reader-auth-token-string nil
   "this string will be used for all authentication requests")
 
+;; Assorted vars needed to process data (these need to be set accordingly
+;; once the modes are worked out but for now they will float around for
+;; easier debugging
+
+(defvar reading-list-data nil
+  "this is where the reading list is stored as a list after bing parsed from json")
+
+
 ;;;;;;;;;;;;;;;;;;;;;
 (defvar google-reader-http-buffer "*Google Reader Http Response Buffer*"
   "buffer used to hold api request output")
@@ -84,7 +92,7 @@
 (defvar google-reader-api-base-url "http://www.google.com/reader/api/"
   "Base url for all Google api requests")
 
-(defvar google-reader-default-fetch-number 200
+(defvar google-reader-default-fetch-number 5
   "default number of items to fetch per request")
 
 (defvar google-reader-reading-list-url-format "%s0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
@@ -120,9 +128,7 @@
   (set-buffer (get-buffer google-reader-auth-token-buffer-name))
   (goto-char (point-min))
   (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
-  (setq google-reader-auth-token-string (match-string 1))
-  (message google-reader-auth-token-string))
-
+  (setq google-reader-auth-token-string (match-string 1)))
 
 (defun google-reader-reset-auth-token ()
   (setq google-reader-auth-token-string nil))
@@ -137,8 +143,15 @@
                    "--header"
                    gr-header)))
 
-(defun google-reader-get-reading-list ()
+(defun google-reader-reading-list-get ()
   (google-reader-get-url (google-reader-reading-list-url)))
+
+(defun google-reader-reading-list-parse ()
+  "parses the fetched reading list (json format)"
+  (set-buffer (get-buffer google-reader-http-buffer))
+  (setq reading-list-data (json-read-from-string (buffer-string)))
+  (loop for item across (cdr (assoc 'items reading-list-data)) do
+        (message (cdr (assoc 'title item)))))
 
 (defun google-reader-setup-auth ()
   (progn
@@ -152,8 +165,12 @@
 ;; (google-reader-reset-auth-token)
 ;; (message google-reader-auth-token-string)
 ;; (google-reader-setup-auth)
-;; (google-reader-get-reading-list)
+;; (google-reader-reading-list-get)
 ;; (message (google-reader-reading-list-url))
+;; (message reading-list-data)
+;; (google-reader-reading-list-parse)
+
+
 
 (provide 'google-reader)
 
