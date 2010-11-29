@@ -54,6 +54,9 @@
 (defvar google-reader-client-login-url "https://www.google.com/accounts/ClientLogin"
   "base url for Google authentication")
 
+(defvar google-reader-quickadd-format "https://www.google.com/reader/api/0/subscription/quickadd?quickadd=%s"
+  "quick add format for subscriptions")
+
 (defvar google-reader-authentication-header-format "accountType=HOSTED_OR_GOOGLE&Email=%s&Passwd=%s&service=reader"
   "format for auth credential header for Google authentication")
 
@@ -158,6 +161,41 @@
     (google-reader-authenticate)
     (google-reader-set-auth-token)
     (google-reader-kill-token-buffer)))
+
+
+;; This stuff requires w3m
+;; TODO: make it optional/conditional
+
+(require 'w3m)
+
+;; TODO: all it does is echoes the links
+;; TODO: allow the selection of region
+(defun google-reader-quickadd-links ()
+  (interactive)
+  (save-excursion
+    (let ((buffer (current-buffer))
+          (prev (point))
+          (url (w3m-url-valid (w3m-anchor (point))))
+          (prevurl nil))
+      (unless url
+        (progn
+          (w3m-next-anchor)
+          (setq url (w3m-url-valid (w3m-anchor (point))))))
+      (when url
+        (setq prevurl url)
+        (message url)
+        (while (progn
+                 (w3m-next-anchor)
+                 (and (> (point) prev)
+                      (< (point) (point-max))))
+          (setq prev (point))
+          (when (setq url (w3m-url-valid (w3m-anchor)))
+            (progn
+              (unless (string= url prevurl)
+                (message url)
+                (message "same as last"))
+              (setq prevurl url))))))))
+
 
 ;; the declarations below are for testing purposes
 ;; (google-reader-authenticate)
