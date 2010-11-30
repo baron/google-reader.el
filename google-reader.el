@@ -54,9 +54,6 @@
 (defvar google-reader-client-login-url "https://www.google.com/accounts/ClientLogin"
   "base url for Google authentication")
 
-(defvar google-reader-quickadd-format "https://www.google.com/reader/api/0/subscription/quickadd?quickadd=%s"
-  "quick add format for subscriptions")
-
 (defvar google-reader-authentication-header-format "accountType=HOSTED_OR_GOOGLE&Email=%s&Passwd=%s&service=reader"
   "format for auth credential header for Google authentication")
 
@@ -92,18 +89,24 @@
   "buffer used to hold api request output")
 
 ;;  These are various urls needed to access the Google Reader api
-(defvar google-reader-api-base-url "http://www.google.com/reader/api/"
+(defvar google-reader-api-base-url "https://www.google.com/reader/api/0/"
   "Base url for all Google api requests")
+
+(defvar google-reader-quickadd-format "%ssubscription/quickadd?quickadd=%s"
+  "quick add format for subscriptions")
 
 (defvar google-reader-default-fetch-number 5
   "default number of items to fetch per request")
 
-(defvar google-reader-reading-list-url-format "%s0/stream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
+(defvar google-reader-reading-list-url-format "%sstream/contents/user/-/state/com.google/reading-list?xt=user/-/state/com.google/read&n=%d%s&client=scroll"
   "This url fetches unread items where %d is the number of items per fetch and %s is where the continuation string will go if any")
 
 ;; passing blank string at end since we're not using continuations yet
 (defun google-reader-reading-list-url ()
   (format google-reader-reading-list-url-format google-reader-api-base-url google-reader-default-fetch-number ""))
+
+(defun google-reader-quickadd-url-string (url)
+  (format google-reader-quickadd-format google-reader-api-base-url url))
 
 (defun google-reader-kill-token-buffer ()
   (if (get-buffer google-reader-auth-token-buffer-name)
@@ -136,6 +139,7 @@
 (defun google-reader-reset-auth-token ()
   (setq google-reader-auth-token-string nil))
 
+;; FIXME: accept additional post params as args
 (defun google-reader-get-url (url)
   (let* ((gr-header (format google-reader-auth-token-header-format google-reader-auth-token-string)))
     (start-process "google-reader-get-url"
@@ -155,6 +159,11 @@
   (setq reading-list-data (json-read-from-string (buffer-string)))
   (loop for item across (cdr (assoc 'items reading-list-data)) do
         (message (cdr (assoc 'title item)))))
+
+;; FIXME: need to get T token for editing
+;; FIXME: use "T" and "quickadd" as post params
+(defun google-reader-quickadd-url (url)
+  (google-reader-get-url (google-reader-quickadd-url-string url)))
 
 (defun google-reader-setup-auth ()
   (progn
@@ -184,6 +193,7 @@
       (when url
         (setq prevurl url)
         (message url)
+        (google-reader-quickadd-url (url))
         (while (progn
                  (w3m-next-anchor)
                  (and (> (point) prev)
@@ -191,14 +201,15 @@
           (setq prev (point))
           (when (setq url (w3m-url-valid (w3m-anchor)))
             (progn
+              (message url)
               (unless (string= url prevurl)
-                (message url)
+                (google-reader-quickadd-url (url))
                 (message "same as last"))
               (setq prevurl url))))))))
 
 
 ;; the declarations below are for testing purposes
-;; (google-reader-authenticate)
+(google-reader-authenticate)
 ;; (google-reader-set-auth-token)
 ;; (google-reader-reset-auth-token)
 ;; (message google-reader-auth-token-string)
@@ -207,8 +218,8 @@
 ;; (message (google-reader-reading-list-url))
 ;; (message reading-list-data)
 ;; (google-reader-reading-list-parse)
-
-
+;; (google-reader-quickadd-url-string  "http://blogs.itmedia.co.jp/osonoi/")
+;; (google-reader-quickadd-url "http://blogs.itmedia.co.jp/osonoi/")
 
 (provide 'google-reader)
 
