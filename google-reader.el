@@ -92,8 +92,12 @@
 (defvar google-reader-api-base-url "https://www.google.com/reader/api/0/"
   "Base url for all Google api requests")
 
+(defvar google-reader-token-url "http://www.google.com/reader/api/0/token")
+
 (defvar google-reader-quickadd-format "%ssubscription/quickadd?quickadd=%s"
   "quick add format for subscriptions")
+
+(defvar google-reader-token-string nil)
 
 (defvar google-reader-default-fetch-number 5
   "default number of items to fetch per request")
@@ -108,13 +112,19 @@
 (defun google-reader-quickadd-url-string (url)
   (format google-reader-quickadd-format google-reader-api-base-url url))
 
+(defun google-reader-kill-buffer (buffer-name)
+  (if (get-buffer buffer-name)
+      (kill-buffer buffer-name)))
+
+(defun google-reader-refresh-buffer (buffer-name)
+  (progn (google-reader-kill-buffer buffer-name)
+         (get-buffer-create buffer-name)))
+
 (defun google-reader-kill-token-buffer ()
-  (if (get-buffer google-reader-auth-token-buffer-name)
-      (kill-buffer google-reader-auth-token-buffer-name)))
+  (google-reader-kill-buffer google-reader-auth-token-buffer-name))
 
 (defun google-reader-refresh-token-buffer ()
-  (progn (google-reader-kill-token-buffer)
-         (get-buffer-create google-reader-auth-token-buffer-name)))
+  (google-reader-refresh-buffer google-reader-auth-token-buffer-name))
 
 (defun google-reader-authenticate ()
   (google-reader-refresh-token-buffer)
@@ -136,14 +146,28 @@
   (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
   (setq google-reader-auth-token-string (match-string 1)))
 
+;; FIXME: doesn't quite work since the token is fetched asynchronously
+;; TODO: need to set callback
+(defun google-reader-set-token ()
+  (let ((bufname "google reader edit token"))
+    (progn
+      (google-reader-refresh-buffer bufname)
+      (google-reader-get-url google-reader-token-url bufname)
+      (set-buffer (get-buffer bufname))
+      (goto-char (point-min))
+      (re-search-forward "\\([a-zA-Z0-9-_]+\\)$" nil t nil)
+      (setq google-reader-token-string (match-string 1)))))
+
 (defun google-reader-reset-auth-token ()
   (setq google-reader-auth-token-string nil))
 
 ;; FIXME: accept additional post params as args
-(defun google-reader-get-url (url)
+(defun google-reader-get-url (url &optional buffer-name)
   (let* ((gr-header (format google-reader-auth-token-header-format google-reader-auth-token-string)))
     (start-process "google-reader-get-url"
-                   google-reader-http-buffer
+                   (if buffer-name
+                       buffer-name
+                     google-reader-http-buffer)
                    google-reader-url-retrieval-program
                    url
                    "--silent"
@@ -209,17 +233,23 @@
 
 
 ;; the declarations below are for testing purposes
-(google-reader-authenticate)
+;; (google-reader-authenticate)
 ;; (google-reader-set-auth-token)
+
 ;; (google-reader-reset-auth-token)
 ;; (message google-reader-auth-token-string)
 ;; (google-reader-setup-auth)
+
 ;; (google-reader-reading-list-get)
 ;; (message (google-reader-reading-list-url))
 ;; (message reading-list-data)
 ;; (google-reader-reading-list-parse)
 ;; (google-reader-quickadd-url-string  "http://blogs.itmedia.co.jp/osonoi/")
 ;; (google-reader-quickadd-url "http://blogs.itmedia.co.jp/osonoi/")
+
+;; (google-reader-set-token)
+;; (message google-reader-token-string)
+
 
 (provide 'google-reader)
 
