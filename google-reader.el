@@ -73,6 +73,9 @@
 (defvar google-reader-auth-token-buffer-name "*google-reader auth token*"
   "this buffer is used for grabbing auth token")
 
+(defvar google-reader-edit-token-buffer-name "*google-reader edit token*"
+  "this buffer is used for the edit token")
+
 (defvar google-reader-auth-token-string nil
   "this string will be used for all authentication requests")
 
@@ -146,17 +149,20 @@
   (re-search-forward "Auth=\\([a-zA-Z0-9-_]+\\)" nil t nil)
   (setq google-reader-auth-token-string (match-string 1)))
 
-;; FIXME: doesn't quite work since the token is fetched asynchronously
-;; TODO: need to set callback
-(defun google-reader-set-token ()
-  (let ((bufname "google reader edit token"))
+(defun google-reader-get-token ()
+  (google-reader-refresh-buffer google-reader-edit-token-buffer-name)
+  (google-reader-get-url google-reader-token-url google-reader-edit-token-buffer-name))
+
+(defun google-reader-parse-edit-token (process event)
     (progn
-      (google-reader-refresh-buffer bufname)
-      (google-reader-get-url google-reader-token-url bufname)
-      (set-buffer (get-buffer bufname))
+      (set-buffer (get-buffer google-reader-edit-token-buffer-name))
       (goto-char (point-min))
       (re-search-forward "\\([a-zA-Z0-9-_]+\\)$" nil t nil)
-      (setq google-reader-token-string (match-string 1)))))
+      (setq google-reader-token-string (match-string 1))))
+
+(defun google-reader-set-token ()
+  (let ((edit-token-process (google-reader-get-token)))
+    (set-process-sentinel edit-token-process 'google-reader-parse-edit-token)))
 
 (defun google-reader-reset-auth-token ()
   (setq google-reader-auth-token-string nil))
